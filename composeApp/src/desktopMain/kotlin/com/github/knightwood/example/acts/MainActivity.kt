@@ -28,6 +28,7 @@ import androidx.jvm.system.core.AppPathProvider
 import androidx.jvm.system.core.keepDirExist
 import androidx.jvm.system.process.ProcessLocker
 import androidx.jvm.system.ui.tray.TrayConf
+import androidx.jvm.system.utils.jdkInfo
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.LifecycleOwner
@@ -71,6 +72,7 @@ open class MainActivity : Activity() {
                     val settings = RenderSettingsProvider.flow.collectAsState(initial = RenderSettingsProvider.defaultValue())
                     MaterialTheme {
                         Column {
+                            Text(jdkInfo().toString())
                             Text(text = "rememberSavable测试")
                             Button(onClick = {
                                 val intent = Intent(this@MainActivity, StateTestActivity::class.java)

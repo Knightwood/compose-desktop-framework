@@ -790,6 +790,54 @@ public class Main {
 
 ### ComponentJFrame
 
+#### 生命周期状态转换
+
+窗口状态到生命周期状态的转换逻辑实现修改自`androidx.compose.ui.scene.ComposeContainerupdateLifecycleState`
+核心逻辑总结成WindowLifecycleAdapter类，可以在任意窗口类中将当前窗口状态转换成生命周期状态，而不用使窗口类必须继承自某个类。
+框架中的ComponentJFrame、ComponentDialog的生命周期状态均来自WindowLifecycleAdapter类的转换。
+如果你的窗口类需要生命周期状态组件，但又无法继承框架中的ComponentJFrame、ComponentDialog类，
+可以在你的窗口类中使用WindowLifecycleAdapter实现生命周期状态。
+
+* 示例
+在无法继承ComponentJFrame的类中实现生命周期状态：
+```java
+
+class TestLifecycleFrame extends JFrame implements LifecycleOwner {
+    private static final Logger log = LoggerFactory.getLogger(TestLifecycleFrame.class);
+
+    LifecycleRegistry lifecycleRegistry = new LifecycleRegistry(this);
+
+    @Override
+    public @NotNull Lifecycle getLifecycle() {
+        return lifecycleRegistry;
+    }
+
+    public TestLifecycleFrame() {
+        setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
+        lifecycleRegistry.setCurrentState(Lifecycle.State.INITIALIZED);
+        //添加到窗口状态监听后将窗口状态转换成生命周期状态
+        WindowAdapter adapter = new WindowLifecycleAdapter(new Function1<Lifecycle.State, Unit>() {
+            @Override
+            public Unit invoke(Lifecycle.State state) {
+                //将窗口状态转换而来的生命周期状态设置到lifecycleRegistry
+                lifecycleRegistry.setCurrentState(state);
+                return null;
+            }
+        });
+        //添加到窗口状态监听
+        this.addWindowListener(adapter);
+        this.addWindowFocusListener(adapter);
+        //打印生命周期变化
+        lifecycleRegistry.addObserver(new LifecycleEventObserver() {
+            @Override
+            public void onStateChanged(@NotNull LifecycleOwner lifecycleOwner, @NotNull Lifecycle.Event event) {
+                log.info(event.toString());
+            }
+        });
+    }
+}
+```
+
 #### 打开窗口
 
 除了生成JFrame实例然后调用setVisible方法显示窗口

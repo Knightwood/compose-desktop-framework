@@ -47,6 +47,11 @@ import java.awt.event.WindowStateListener
  * 2. 将生命周期状态派发给lifecycleRegistry或手动处理
  * 3. 转发监听到的窗口状态
  *
+ * 注:
+ * 从上面打印的窗口状态时序可以看到windowOpened并非第一个事件，
+ * 如果单纯的将windowGainedFocus转换成`ON_RESUME`，windowOpened转换为`ON_CREATE`并设置到lifecycleRegistry，
+ * 会让生命周期状态出现`ON_RESUME`状态早于`ON_CREATE`的错误时序。
+ *
  * 使用方式:
  *
  * ```

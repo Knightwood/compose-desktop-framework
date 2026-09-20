@@ -4,24 +4,51 @@ new FormModel {
 	contentType: "form/swing"
 	root: new FormRoot {
 		add( new FormWindow( "androidx.jvm.swing.lifecycle.jFrame.ComponentJFrame", new FormLayoutManager( class com.intellij.uiDesigner.core.GridLayoutManager ) {
-			"$columnCount": 1
-			"$rowCount": 2
-			"hGap": 0
-			"vGap": 0
+			"$columnCount": 2
+			"$rowCount": 3
+			"hGap": 8
+			"vGap": 8
+			"margin": new java.awt.Insets( 8, 8, 8, 8 )
 		} ) {
 			name: "this"
 			"$sizePolicy": 1
 			"title": "主窗口"
+			add( new FormComponent( "javax.swing.JLabel" ) {
+				name: "label2"
+				"text": "jdk信息"
+			}, new FormLayoutConstraints( class com.intellij.uiDesigner.core.GridConstraints ) {
+				"hSizePolicy": 1
+				"vSizePolicy": 1
+			} )
+			add( new FormComponent( "javax.swing.JLabel" ) {
+				name: "jdkinfo"
+				"text": "text"
+			}, new FormLayoutConstraints( class com.intellij.uiDesigner.core.GridConstraints ) {
+				"vSizePolicy": 1
+				"column": 1
+			} )
+			add( new FormComponent( "javax.swing.JLabel" ) {
+				name: "label3"
+				"text": "书籍信息"
+			}, new FormLayoutConstraints( class com.intellij.uiDesigner.core.GridConstraints ) {
+				"row": 1
+				"hSizePolicy": 1
+			} )
 			add( new FormContainer( "javax.swing.JScrollPane", new FormLayoutManager( class javax.swing.JScrollPane ) ) {
 				name: "scrollPane1"
 				add( new FormComponent( "javax.swing.JTextArea" ) {
 					name: "tv_bookInfo"
+					"editable": false
+					"lineWrap": true
+					"wrapStyleWord": true
 				} )
 			}, new FormLayoutConstraints( class com.intellij.uiDesigner.core.GridConstraints ) {
 				"fill": 3
+				"row": 1
+				"column": 1
 			} )
 			add( new FormContainer( "javax.swing.JPanel", new FormLayoutManager( class javax.swing.BoxLayout ) ) {
-				name: "contentView"
+				name: "bottomView"
 				add( new FormComponent( "javax.swing.JLabel" ) {
 					name: "label1"
 					"text": "书籍窗口"
@@ -35,11 +62,15 @@ new FormModel {
 					"text": "打开"
 				} )
 			}, new FormLayoutConstraints( class com.intellij.uiDesigner.core.GridConstraints ) {
-				"row": 1
+				"row": 2
+				"vSizePolicy": 1
+				"useParentLayout": false
+				"anchor": 4
+				"colSpan": 2
 			} )
 		}, new FormLayoutConstraints( null ) {
 			"location": new java.awt.Point( 120, 66 )
-			"size": new java.awt.Dimension( 375, 200 )
+			"size": new java.awt.Dimension( 490, 285 )
 		} )
 	}
 }

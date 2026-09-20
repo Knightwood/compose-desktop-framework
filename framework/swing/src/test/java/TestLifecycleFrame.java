@@ -27,21 +27,27 @@ class TestLifecycleFrame extends JFrame implements LifecycleOwner {
     public TestLifecycleFrame() {
         setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
         lifecycleRegistry.setCurrentState(Lifecycle.State.INITIALIZED);
+        //添加到窗口状态监听后将窗口状态转换成生命周期状态
         WindowAdapter adapter = new WindowLifecycleAdapter(new Function1<Lifecycle.State, Unit>() {
             @Override
             public Unit invoke(Lifecycle.State state) {
+                //将窗口状态转换而来的生命周期状态设置到lifecycleRegistry
                 lifecycleRegistry.setCurrentState(state);
                 return null;
             }
         });
+        //添加到窗口状态监听
         this.addWindowListener(adapter);
         this.addWindowFocusListener(adapter);
+        //打印生命周期变化
         lifecycleRegistry.addObserver(new LifecycleEventObserver() {
             @Override
             public void onStateChanged(@NotNull LifecycleOwner lifecycleOwner, @NotNull Lifecycle.Event event) {
                 log.info(event.toString());
             }
         });
+
+        //组件初始化,在这里没有实际作用, 只是让窗口看起来不太空.
         initComponents();
     }
 

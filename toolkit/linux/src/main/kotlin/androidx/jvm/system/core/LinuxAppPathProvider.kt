@@ -18,6 +18,7 @@ class LinuxAppPathProvider : AppBasePathProvider {
     override val installedExePath: Path = getAppExePath()
 
     override val configDirPath: Path = getUserPath()
+    override val internalConfigDirPath: Path = installPath.resolve(".conf")
 
     private fun getAppJarPath(): Path {
         SystemProperty.get("compose.application.resources.dir")?.let {

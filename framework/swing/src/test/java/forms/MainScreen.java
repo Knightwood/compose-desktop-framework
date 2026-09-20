@@ -20,6 +20,8 @@ import javax.swing.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 
+import static androidx.jvm.system.utils.JDKInfoKt.jdkInfo;
+
 public class MainScreen extends ComponentJFrame {
     private static final Logger logger = LoggerFactory.getLogger(MainScreen.class);
 
@@ -35,6 +37,8 @@ public class MainScreen extends ComponentJFrame {
 
     private void setupUI() {
         initComponents();
+        //添加html标签以自动换行
+        jdkinfo.setText("<html>" + jdkInfo() + "</html>");
         button1.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -53,9 +57,12 @@ public class MainScreen extends ComponentJFrame {
 
     private void initComponents() {
         // JFormDesigner - Component initialization - DO NOT MODIFY  //GEN-BEGIN:initComponents  @formatter:off
+        label2 = new JLabel();
+        jdkinfo = new JLabel();
+        label3 = new JLabel();
         scrollPane1 = new JScrollPane();
         tv_bookInfo = new JTextArea();
-        contentView = new JPanel();
+        bottomView = new JPanel();
         label1 = new JLabel();
         hSpacer1 = new JPanel(null);
         button1 = new JButton();
@@ -63,48 +70,80 @@ public class MainScreen extends ComponentJFrame {
         //======== this ========
         setTitle("\u4e3b\u7a97\u53e3");
         var contentPane = getContentPane();
-        contentPane.setLayout(new GridLayoutManager(2, 1, new Insets(0, 0, 0, 0), 0, 0));
+        contentPane.setLayout(new GridLayoutManager(3, 2, new Insets(8, 8, 8, 8), 8, 8));
+
+        //---- label2 ----
+        label2.setText("jdk\u4fe1\u606f");
+        contentPane.add(label2, new GridConstraints(0, 0, 1, 1,
+            GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_NONE,
+            GridConstraints.SIZEPOLICY_CAN_SHRINK,
+            GridConstraints.SIZEPOLICY_CAN_SHRINK,
+            null, null, null));
+
+        //---- jdkinfo ----
+        jdkinfo.setText("text");
+        contentPane.add(jdkinfo, new GridConstraints(0, 1, 1, 1,
+            GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_NONE,
+            GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
+            GridConstraints.SIZEPOLICY_CAN_SHRINK,
+            null, null, null));
+
+        //---- label3 ----
+        label3.setText("\u4e66\u7c4d\u4fe1\u606f");
+        contentPane.add(label3, new GridConstraints(1, 0, 1, 1,
+            GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_NONE,
+            GridConstraints.SIZEPOLICY_CAN_SHRINK,
+            GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
+            null, null, null));
 
         //======== scrollPane1 ========
         {
+
+            //---- tv_bookInfo ----
+            tv_bookInfo.setEditable(false);
+            tv_bookInfo.setLineWrap(true);
+            tv_bookInfo.setWrapStyleWord(true);
             scrollPane1.setViewportView(tv_bookInfo);
         }
-        contentPane.add(scrollPane1, new GridConstraints(0, 0, 1, 1,
+        contentPane.add(scrollPane1, new GridConstraints(1, 1, 1, 1,
             GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_BOTH,
             GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
             GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
             null, null, null));
 
-        //======== contentView ========
+        //======== bottomView ========
         {
-            contentView.setLayout(new BoxLayout(contentView, BoxLayout.X_AXIS));
+            bottomView.setLayout(new BoxLayout(bottomView, BoxLayout.X_AXIS));
 
             //---- label1 ----
             label1.setText("\u4e66\u7c4d\u7a97\u53e3");
-            contentView.add(label1);
+            bottomView.add(label1);
 
             //---- hSpacer1 ----
             hSpacer1.setMinimumSize(new Dimension(16, 12));
-            contentView.add(hSpacer1);
+            bottomView.add(hSpacer1);
 
             //---- button1 ----
             button1.setText("\u6253\u5f00");
-            contentView.add(button1);
+            bottomView.add(button1);
         }
-        contentPane.add(contentView, new GridConstraints(1, 0, 1, 1,
-            GridConstraints.ANCHOR_CENTER, GridConstraints.FILL_NONE,
+        contentPane.add(bottomView, new GridConstraints(2, 0, 1, 2,
+            GridConstraints.ANCHOR_EAST, GridConstraints.FILL_NONE,
             GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
-            GridConstraints.SIZEPOLICY_CAN_SHRINK | GridConstraints.SIZEPOLICY_CAN_GROW,
+            GridConstraints.SIZEPOLICY_CAN_SHRINK,
             null, null, null));
-        setSize(469, 250);
+        setSize(612, 356);
         setLocationRelativeTo(getOwner());
         // JFormDesigner - End of component initialization  //GEN-END:initComponents  @formatter:on
     }
 
     // JFormDesigner - Variables declaration - DO NOT MODIFY  //GEN-BEGIN:variables  @formatter:off
+    private JLabel label2;
+    private JLabel jdkinfo;
+    private JLabel label3;
     private JScrollPane scrollPane1;
     private JTextArea tv_bookInfo;
-    private JPanel contentView;
+    private JPanel bottomView;
     private JLabel label1;
     private JPanel hSpacer1;
     private JButton button1;

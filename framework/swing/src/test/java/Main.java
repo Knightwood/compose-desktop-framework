@@ -27,29 +27,22 @@ import java.util.Enumeration;
 public class Main {
     private static final Logger logger = LoggerFactory.getLogger(Main.class);
     private static final Font font_1 = new Font("Noto Sans SC", Font.PLAIN, 16);
+    private static final Font font_2 = new Font("思源黑体", Font.PLAIN, 16);
 
     public static void main(String[] args) {
         try {
-            logger.info("Starting Mian");
-//            {//swing原生
-//                // 开启全局字体抗锯齿，打开后有些字体显示效果反而不好
-////                System.setProperty("awt.useSystemAAFontSettings", "on");
-//                System.setProperty("swing.aatext", "true");
-//                // 切换为当前操作系统的原生 UI 风格
-//                UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-//                InitGlobalFont(font_1); // 统一设置字体
-//            }
-            {//Flataf
-                System.setProperty("flatlaf.uiScale", "1.25");
-                FlatLightLaf.setup();
-            }
+//            swingSystemStyle();
+            flatlafStyle();
             Singularity.INSTANCE.boot();
             SwingUtilities.invokeLater(new Runnable() {
                 public void run() {
+                    //显示主窗口
 //                    ApplicationSaveStateSaver service = ServiceBooter.INSTANCE.getService(ApplicationSaveStateSaver.class);
                     MainScreen screen = new MainScreen();
 //                    screen.setSavedState(service.obtain(Tokens.of("main-0")));
                     screen.setVisible(true);
+
+                    //生命周期测试窗口
 //                    TestLifecycleFrame testLifecycleFrame = new TestLifecycleFrame();
 //                    testLifecycleFrame.setVisible(true);
                 }
@@ -57,6 +50,20 @@ public class Main {
         } catch (Exception e) {
             logger.error("err", e);
         }
+    }
+
+    private static void flatlafStyle() {
+        System.setProperty("flatlaf.uiScale", "1.25");
+        FlatLightLaf.setup();
+    }
+
+    private static void swingSystemStyle() throws UnsupportedLookAndFeelException, ClassNotFoundException, InstantiationException, IllegalAccessException {
+        // 开启全局字体抗锯齿，打开后有些字体显示效果反而不好
+//        System.setProperty("awt.useSystemAAFontSettings", "on");
+//        System.setProperty("swing.aatext", "true");
+        // 切换为当前操作系统的原生 UI 风格
+        UIManager.setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
+        InitGlobalFont(font_2); // 统一设置字体
     }
 
     /**
