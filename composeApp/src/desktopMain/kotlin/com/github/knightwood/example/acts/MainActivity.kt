@@ -187,14 +187,7 @@ open class MainActivity : Activity() {
                             val appname = stringResource(me.i18n.resources.Res.string.app_name)
                             Text(appname)
                             val pathProvider = AppPathProvider.getInstance()
-                            val userHome = pathProvider.userHome
-                            val installPath = pathProvider.installPath
-                            val installedJarPath = pathProvider.installedJarPath
-                            val installedExePath = pathProvider.installedExePath
-                            val configPath = pathProvider.configDirPath
-                            val info =
-                                " 用户目录: $userHome\n 安装路径: $installPath\n 程序jar包路径: $installedJarPath\n exe文件路径: $installedExePath\n 配置目录路径: $configPath\n"
-                            Text(info)
+                            Text(pathProvider.toString())
                         }
                     }
                 }

@@ -1,4 +1,16 @@
 import org.jetbrains.compose.desktop.application.dsl.TargetFormat
+import org.jetbrains.compose.desktop.application.dsl.TargetFormat.*
+import org.jetbrains.compose.desktop.application.dsl.TargetFormat.Deb
+import org.jetbrains.compose.desktop.application.dsl.TargetFormat.Dmg
+import org.jetbrains.compose.desktop.application.dsl.TargetFormat.Exe
+import org.jetbrains.compose.desktop.application.dsl.TargetFormat.Msi
+import org.jetbrains.compose.desktop.application.dsl.TargetFormat.Pkg
+import org.jetbrains.compose.desktop.application.dsl.TargetFormat.Rpm
+import org.jetbrains.kotlin.compose.compiler.gradle.ComposeCompilerGradlePluginExtension
+import java.util.*
+import com.github.knightwood.kmp.versioning.*
+import com.github.knightwood.kmp.platform2.*
+import io.github.z4kn4fein.semver.toVersion
 
 plugins {
     alias(libs.plugins.kotlinMultiplatform)
@@ -6,22 +18,40 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.ksp)
     alias(libs.plugins.kotlin.serialization)
+    id("empty")
 }
 
-enum class SystemOs {
-    MacOS, Windows, Linux,
+version = "1.0.0".toVersion()
+
+/**
+ * 美化的应用名称-这里使用中文，nsis打包会闪退
+ */
+fun Project.getPrettifiedAppName(): String {
+    return "桌面示例"
 }
 
-val currentOS: SystemOs by lazy {
-    val os = System.getProperty("os.name")
-    when {
-        os.equals("Mac OS X", ignoreCase = true)
-                || os.contains("mac")
-                || os.contains("darwin") -> SystemOs.MacOS
+/**
+ * 这个不会显示出来，但是很重要 exe的名称，安装路径名称。 不能有空格
+ */
+fun Project.getAppName(): String {
+    return "DesktopExample"
+}
 
-        os.startsWith("Win", ignoreCase = true) -> SystemOs.Windows
-        os.startsWith("Linux", ignoreCase = true) -> SystemOs.Linux
-        else -> error("Unknown OS name: $os")
+fun getVendor() = "宇宙和平公司"
+
+fun Project.getAppPackageFile(test: Boolean): String {
+    if (test)
+        return "build/compose/binaries/main/app/${getAppName()}"
+    else
+        return "build/compose/binaries/main-release/app/${getAppName()}"
+}
+
+fun Project.getCustomIcon(): File {
+    return when (currentSystemOS) {
+        OS.Linux -> project.file("resources/icons/icon.png")
+        OS.Windows -> project.file("resources/icons/icon.ico")
+        OS.MacOS -> project.file("resources/icons/icon.icns")
+        else-> throw IllegalStateException("Unsupported platform: ${currentSystemOS.name}")
     }
 }
 
@@ -58,6 +88,8 @@ kotlin {
 
             implementation(project.dependencies.platform(libs.koin.bom))
             implementation(libs.koin.core)
+            val semverVersion = "2.0.0"
+            implementation("io.github.z4kn4fein:semver:${semverVersion}")
         }
         desktopMain.dependencies {
             implementation(compose.desktop.currentOs){
@@ -69,11 +101,11 @@ kotlin {
             implementation(project(":framework:compose"))
             implementation(project(":compose-tray"))
             implementation(project(":toolkit:spi"))
-            when (currentOS) {
-                SystemOs.Linux -> {
+            when (currentSystemOS) {
+                OS.Linux -> {
                     implementation(project(":toolkit:linux"))
                 }
-                SystemOs.Windows -> {
+                OS.Windows -> {
                     implementation(project(":toolkit:win"))
                 }
                 else -> {
@@ -117,8 +149,36 @@ compose.desktop {
         nativeDistributions {
             modules("java.instrument", "jdk.unsupported", "java.naming")
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "com.github.knightwood.example"
-            packageVersion = "1.0.0"
+            packageName = getAppName()//"com.github.knightwood.example"
+            packageVersion = getAppVersionStringForPackaging()
+            val menuGroupName = getPrettifiedAppName()
+            windows {
+                exePackageVersion = getAppVersionStringForPackaging(Exe)
+                msiPackageVersion = getAppVersionStringForPackaging(Msi)
+                // 一个唯一的 ID，当更新的版本比安装的版本更新时，它使用户能够通过安装程序更新应用程序。对于单个应用程序，该值必须保持不变；
+                upgradeUuid = properties["INSTALLER.WINDOWS.UPGRADE_UUID"]?.toString()
+                iconFile = getCustomIcon()
+                //true：安装到用户目录。如果为false，则安装到program目录，但会导致无法使用单进程模式。
+                perUserInstall = true
+                console = false
+                dirChooser = true
+                shortcut = true
+                menuGroup = menuGroupName
+                menu = true
+            }
+            linux {
+                debPackageVersion = getAppVersionStringForPackaging(Deb)
+                rpmPackageVersion = getAppVersionStringForPackaging(Rpm)
+                appCategory = "Network"
+                iconFile = getCustomIcon()
+                menuGroup = menuGroupName
+                shortcut = true
+            }
+            macOS {
+                pkgPackageVersion = getAppVersionStringForPackaging(Pkg)
+                dmgPackageVersion = getAppVersionStringForPackaging(Dmg)
+                iconFile = getCustomIcon()
+            }
         }
     }
 }

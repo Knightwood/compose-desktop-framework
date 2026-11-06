@@ -107,15 +107,17 @@ class AppPathProvider private constructor(
 ) : AppBasePathProvider by pathProviderImpl {
 
     override fun print() {
-        kLogger.info {
-            val appPathProvider = this
-            val userHome = appPathProvider.userHome
-            val installPath = appPathProvider.installPath
-            val installedJarPath = appPathProvider.installedJarPath
-            val installedExePath = appPathProvider.installedExePath
-            val configPath = appPathProvider.configDirPath
-            "\n 用户目录: $userHome\n 安装路径: $installPath\n 程序jar包路径: $installedJarPath\n exe文件路径: $installedExePath\n 配置目录路径: $configPath\n 内部配置目录路径: $internalConfigDirPath\n"
-        }
+        kLogger.info { toString() }
+    }
+
+    override fun toString(): String {
+        val appPathProvider = this
+        val userHome = appPathProvider.userHome
+        val installPath = appPathProvider.installPath
+        val installedJarPath = appPathProvider.installedJarPath
+        val installedExePath = appPathProvider.installedExePath
+        val configPath = appPathProvider.configDirPath
+        return "\n 用户目录: $userHome\n 安装路径: $installPath\n 程序jar包路径: $installedJarPath\n exe文件路径: $installedExePath\n 配置目录路径: $configPath\n 内部配置目录路径: $internalConfigDirPath\n"
     }
 
     companion object {

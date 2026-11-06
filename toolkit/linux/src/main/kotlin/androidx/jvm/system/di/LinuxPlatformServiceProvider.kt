@@ -9,7 +9,7 @@ import org.koin.core.qualifier.named
 import org.koin.dsl.module
 
 @AutoService(ModuleProvider::class)
-internal open class MacPlatformServiceProvider : ModuleProvider {
+internal open class LinuxPlatformServiceProvider : ModuleProvider {
     override fun provide(): Module {
         return module {
             single<AppBasePathProvider>(named(SystemOs.Linux)) {
