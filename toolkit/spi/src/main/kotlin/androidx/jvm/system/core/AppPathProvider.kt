@@ -205,7 +205,9 @@ class DebugAppPathProvider : AppBasePathProvider {
     /**
      * jar包的存储路径，ide环境下不存在
      */
-    override val installedJarPath: OkioPath = "".toOkioPath()
+    override val installedJarPath: OkioPath = composeAppDir
+        .resolve("build")
+        .resolve("libs")
 
     /**
      * exe路径不存在，ide环境下不存在
@@ -218,12 +220,18 @@ class DebugAppPathProvider : AppBasePathProvider {
     override val userHome: OkioPath = SystemProperty["user.home"]!!.toOkioPath()
 
     override val configDirPath: OkioPath
-        get() = userHome.resolve(".${AppInfoProvider.get().appName}")
+        get() = composeAppDir
+            .resolve("DebugConfFile")
+            .resolve("user")
+            .resolve(".${AppInfoProvider.get().appName}")
 
     /**
      * 配置文件路径，位于project目录的.conf文件夹下
      */
-    override val internalConfigDirPath: OkioPath = composeAppDir.resolve(".conf")
+    override val internalConfigDirPath: OkioPath = composeAppDir
+        .resolve("DebugConfFile")
+        .resolve("internal")
+        .resolve(".conf")
 
 }
 
