@@ -3,6 +3,7 @@ package com.github.knightwood.example
 import androidx.compose.desktop.runtime.core.Application
 import androidx.compose.desktop.runtime.savestate.ApplicationSaveStateSaver
 import androidx.jvm.system.core.AppInfoProvider
+import androidx.jvm.system.core.DesktopToolkitBooster
 import androidx.jvm.system.di.InstanceContext
 import androidx.jvm.system.di.startUp
 import androidx.jvm.system.process.ProcessLocker
@@ -33,7 +34,7 @@ class MainApplication : Application() {
         ctx = this
         //通过修改locale，修改软件的语言显示
         Locale.setDefault(Locale.US)
-        AppInfoProvider.provide {
+        DesktopToolkitBooster.provideApplicationInfo {
             appName = "测试"
             isDevMode = false
         }

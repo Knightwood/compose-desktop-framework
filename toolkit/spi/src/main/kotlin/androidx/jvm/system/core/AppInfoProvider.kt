@@ -9,20 +9,13 @@ import androidx.jvm.system.utils.MutableLazy
  *
  * 需要在使用[AppPathProvider]之前就初始化
  */
+@Deprecated("Use DesktopToolkitBooster instead")
 object AppInfoProvider {
-    private var appInfo: AppInfo by MutableLazy {
-        val info = ProcessInfoHelper.sampleInfo
-        val isProcessNameIsJava = ProcessInfoHelper.sampleInfo.isProcessNameIsJava
-        AppInfo(
-            appName = if (isProcessNameIsJava) "DevJava" else info.processName
-        )
-    }
-
     /**
      * 获取应用信息
      */
     fun get(): AppInfo {
-        return appInfo
+        return DesktopToolkitBooster.getApplicationInfo()
     }
 
     /**
@@ -31,24 +24,25 @@ object AppInfoProvider {
     fun provide(scope: AppInfo.() -> Unit) {
         val info = AppInfo()
         scope.invoke(info)
-        appInfo = info
+        DesktopToolkitBooster.setApplicationInfo(info)
     }
 
     override fun toString(): String {
-        return appInfo.toString()
+        return DesktopToolkitBooster.getApplicationInfo().toString()
     }
 
 }
 
 /**
- * @property isDevMode 是否是开发模式，未打包运行
- * @property appName 软件名称
- * @property appDisplayName 软件显示名称、美化名称，给用户看的名称，默认与软件名称相同
+ * App info
+ * @constructor Creates a new AppInfo
+ * @property appName the app name
+ * @property isDevMode the is dev mode
+ * @property appDisplayName the app display name
  */
 data class AppInfo(
-    @Deprecated("无用")
-    var isDevMode: Boolean = false,
     var appName: String = "untitled",
-    @Deprecated("无用")
+    /*  非必须字段  */
+    var isDevMode: Boolean = false,
     var appDisplayName: String = appName,
 )
