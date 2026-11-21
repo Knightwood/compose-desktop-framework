@@ -234,7 +234,7 @@ Compose框架与swing框架可以同时使用，它们有些类具有共同的�
 首先说几个框架定义的概念：
 
 1. 应用根视图
-application函数需要传递content参数，在此参数中调用Window即可显示窗口
+   application函数需要传递content参数，在此参数中调用Window即可显示窗口
 ```kotlin
 fun main() {
     application {
@@ -245,7 +245,7 @@ fun main() {
 我们把application的content参数实现称为应用根视图
 
 2. Activity根视图：
-每个Activity都会持有一个根视图，此视图是个普通的Compose函数，只不过此函数内部会调用Window
+   每个Activity都会持有一个根视图，此视图是个普通的Compose函数，只不过此函数内部会调用Window
 ```kotlin
 typealias ComposeContent = @Composable () -> Unit
 
@@ -255,8 +255,8 @@ val window1 : ComposeContent = {
 ```
 
 3. 框架内窗口、框架外窗口
-直接在application{}中调用的Window函数称为框架外窗口
-application{}中调用Activity根视图函数，显示的窗口称为框架内窗口
+   直接在application{}中调用的Window函数称为框架外窗口
+   application{}中调用Activity根视图函数，显示的窗口称为框架内窗口
 
 好了，现在来讲窗口管理实现原理
 
@@ -346,7 +346,7 @@ WindowManager内部调用了application函数，在应用根视图中遍历并�
 
 为解决此问题，增加了ApplicationRootContent接口：
 * 传递此接口，WindowManager会调用接口函数，就将框架内所有窗口显示功能（AllWindows函数）作为参数传递，
-允许用户自定义application{}中的内容显示，自行决定AllWindows显示时机，提供托盘图标、脱离框架的Window、提供CompositionLocal值等。
+  允许用户自定义application{}中的内容显示，自行决定AllWindows显示时机，提供托盘图标、脱离框架的Window、提供CompositionLocal值等。
 * 不传递此接口，WindowManager将直接在application{}中调用AllWindows函数，显示所有框架内的窗口。
 
 ```kotlin
@@ -799,7 +799,7 @@ public class Main {
 可以在你的窗口类中使用WindowLifecycleAdapter实现生命周期状态。
 
 * 示例
-在无法继承ComponentJFrame的类中实现生命周期状态：
+  在无法继承ComponentJFrame的类中实现生命周期状态：
 ```java
 
 class TestLifecycleFrame extends JFrame implements LifecycleOwner {
@@ -849,7 +849,7 @@ screen.setVisible(true);
 还可以使用LaunchJFrameIntent，使用方式与上面Compose章节中的Intent是类似的，
 不同之处：
 1. 没有为Swing提供Context，要使用Intent打开窗口，无法直接在某个Context中直接调用openJFrame、openJFrameForResult方法。
-而是需要调用JFrameManager.openJFrame、JFrameManager.openJFrameForResult方法。
+   而是需要调用JFrameManager.openJFrame、JFrameManager.openJFrameForResult方法。
 2. java中无法使用kotlin中的value class，要给组件设置Token，需要使用Tokens.of方法获取Token实例
 
 使用Inent启动JFrame示例：
