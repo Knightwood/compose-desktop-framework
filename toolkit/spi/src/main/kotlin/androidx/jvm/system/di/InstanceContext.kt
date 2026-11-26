@@ -1,5 +1,6 @@
 package androidx.jvm.system.di
 
+import androidx.jvm.system.utils.SystemOs
 import androidx.jvm.system.utils.currentOS
 import org.koin.core.Koin
 import org.koin.core.KoinApplication
@@ -9,6 +10,7 @@ import org.koin.core.context.KoinContext
 import org.koin.core.error.KoinApplicationAlreadyStartedException
 import org.koin.core.module.Module
 import org.koin.core.parameter.ParametersDefinition
+import org.koin.core.parameter.ParametersHolder
 import org.koin.core.qualifier.Qualifier
 import org.koin.core.qualifier.named
 import org.koin.dsl.KoinAppDeclaration
@@ -137,7 +139,30 @@ fun InstanceContext.startUp(appDeclaration: KoinAppDeclaration = {}) {
 
 /**
  * 获取当前平台下某个类的实例
+ *
+ * 有些服务使用接口形式定义,在不同平台模块下有不同的实现,
+ * 这些服务会使用当前平台枚举作为Qualifier注册到InstanceContext的koin容器中.
+ *
+ * 要获取这些服务的实例,可以使用此方法
+ * 此方法会根据当前平台枚举作为Qualifier从InstanceContext的koin容器中获取服务实例
+ *
+ * @param parameters 服务所需参数, 大多数情况下服务会在框架初始化时被初始化,参数也由那时被传递,所以你使用时一般不需要再传递参数
  */
-inline fun <reified T : Any> getPlatformInstance(): T {
-    return InstanceContext.get().get<T>(qualifier = named(currentOS))
+inline fun <reified T : Any> getPlatformInstance(noinline parameters: (() -> ParametersHolder)? = null): T {
+    return InstanceContext.get().get<T>(qualifier = named(currentOS), parameters = parameters)
 }
+
+/**
+ * 获取当前平台的Koin名称, 此名称作为Qualifier使用可用于获取平台相关服务实例
+ *
+ * @return [Qualifier] - Current platform koin named
+ */
+val currentPlatformKoinNamed
+    get() = platformKoinNamedFrom(currentOS)
+
+/**
+ * 获取某平台的Koin名称, 此名称作为Qualifier使用可用于获取平台相关服务实例
+ *
+ * @param os
+ */
+fun platformKoinNamedFrom(os: SystemOs) = named(os)

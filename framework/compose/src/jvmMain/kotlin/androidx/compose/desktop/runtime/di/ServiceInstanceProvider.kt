@@ -4,6 +4,7 @@ import androidx.compose.desktop.runtime.activity.ActivityLauncher
 import androidx.compose.desktop.runtime.activity.ActivityManager
 import androidx.compose.desktop.runtime.activity.IActivityLauncher
 import androidx.compose.desktop.runtime.core.Application
+import androidx.compose.desktop.runtime.window.ApplicationWindowContainerImpl
 import androidx.compose.desktop.runtime.window.WindowManager
 import androidx.jvm.system.di.InstanceContext
 import androidx.jvm.system.di.ModuleProvider
@@ -26,7 +27,9 @@ class ServiceInstanceProvider : ModuleProvider {
         return module {
             singleOf(::ActivityManager)
             single { get<ActivityManager>().launcherManager }.bind<IActivityLauncher>()
-            singleOf(::WindowManager)
+            single<WindowManager> {
+                WindowManager(it.getOrNull() ?: ApplicationWindowContainerImpl())
+            }
             single(named<Application>()) {
                 CoroutineScope(Dispatchers.Default) + SupervisorJob() + CoroutineName("Application")
             }

@@ -52,8 +52,9 @@ import kotlin.getValue
  *
  * @see application
  */
-class WindowManager constructor() :
-    InstanceKoinComponent {
+class WindowManager constructor(
+    private val applicationContainer: ApplicationWindowContainer = ApplicationWindowContainerImpl(),
+) : InstanceKoinComponent {
 
     /** 与 [ActivityManager] 绑定的协程作用域，提供Swing UI 线程 */
     val scope by inject<CoroutineScope>(named<ActivityManager>())
@@ -65,15 +66,6 @@ class WindowManager constructor() :
 
     /** 无 Window 宿主的弹窗根视图集合 */
     private val dialogs = RootViewMgr<Unit>()
-
-    /**
-     * 用于用户自定义 应用根视图，默认为 null。
-     *
-     * 为 null 时使用默认根视图（直接渲染 [AllWindows]）；
-     * 非 null 时由用户决定Activity根视图显示时机、提供自定义窗口内容、托盘，参见 [ApplicationRootContent]。
-     */
-    var userInsteadApplicationRootContent: ApplicationRootContent? = null
-        internal set
 
     /** 当前 Compose `application {}` 的作用域，[prepare] 调用后赋值。 */
     private var applicationScope: ApplicationScope? = null
@@ -98,11 +90,11 @@ class WindowManager constructor() :
         }
         // 调用此函数后当前线程会陷入 Compose 主循环，需注意调用时机
         // exitProcessOnExit = false 避免主循环结束后进程被直接退出
-        application(exitProcessOnExit = false) {
+        applicationContainer {
             this@WindowManager.applicationScope = this
             isPrepared = true
             //若存在自定义应用根视图,则将所有窗口显示委托给 `userInsteadApplicationRootContent`, 否则直接显示所有窗口
-            userInsteadApplicationRootContent?.Invoke(scope = this, content = { AllWindows() }) ?: this.AllWindows()
+            AllWindows()
         }
     }
 
@@ -217,50 +209,26 @@ typealias DialogWindowComposableContent = @Composable DialogWindowScope.() -> Un
 typealias ComposableContent = @Composable () -> Unit
 
 /**
- * 应用根视图提供者，用于自定义 Compose `application {}` 中的显示结构。
- *
- * 在默认实现中，[WindowManager] 直接在 `application {}` 中遍历并渲染所有窗口，
- * 用户无法为要显示的窗口（框架内窗口或者说Activity根视图）提供提供[CompositionLocal]值、主题、异常捕获等外层结构，也无法实现显示脱离框架的窗口。
- * 因此提供此接口用于实现上述无法实现之事，由用户实现application根视图结构，提供自定义显示内容。
- *
- * 用法：
- * ```
- * object : ApplicationRootContent {
- *    // 框架内要显示的所有窗口将作为windows参数传递
- *     override fun ApplicationScope.invoke(windows: ComposableContent) {
- *         UncaughtExceptionContent {
- *             MaterialTheme {
- *                 windows() // 必须调用，否则所有框架内的窗口不会显示
- *                 SystemTray()
- *             }
- *         }
- *     }
- * }
- * ```
- *
+ * Application window container
  */
-fun interface ApplicationRootContent {
-
+fun interface ApplicationWindowContainer {
     /**
+     * 此函数将会在[WindowManager.prepare]中被调用，并将应用所有窗口作为参数传递
      *
-     * 此方法将在[WindowManager]中由框架调用，渲染 Application 根视图。
+     * 在此函数实现中调用传递进来的窗口参数,以让所有窗口得到显示
      *
-     * **实现契约**：必须调用 [windows]，否则 [WindowManager] 中挂载的任何窗口
-     * 都不会显示；其它内容（主题、托盘、异常包装等）可自由组合。
+     * 需要指定 exitProcessOnExit = false 避免主循环结束后进程被直接退出
      *
-     * @param windows 承载所有窗口的 Compose 函数，必须调用。
-     * @receiver 当前 Compose `application {}` 的 [ApplicationScope]
+     * @param windows 承载所有窗口的 Compose 函数
+     * @receiver
      */
-    @Composable
-    operator fun ApplicationScope.invoke(windows: ComposableContent)
+    operator fun invoke(windows: @Composable ApplicationScope.() -> Unit)
 }
 
-/**
- * 提供在ApplicationRootContent之外更简单的调用[ApplicationRootContent.invoke]方法能力
- *
- * @param scope   当前 [ApplicationScope]
- * @param content 承载所有窗口的 Compose 内容
- */
-@Composable
-internal fun ApplicationRootContent.Invoke(scope: ApplicationScope, content: ComposableContent) =
-    scope.invoke(content)
+class ApplicationWindowContainerImpl : ApplicationWindowContainer {
+    override fun invoke(windows: @Composable ApplicationScope.() -> Unit) {
+        application(exitProcessOnExit = false) {
+            windows()
+        }
+    }
+}

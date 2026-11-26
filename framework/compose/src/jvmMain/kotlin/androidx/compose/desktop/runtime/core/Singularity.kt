@@ -4,7 +4,7 @@ import androidx.compose.desktop.runtime.activity.Activity
 import androidx.compose.desktop.runtime.activity.ActivityManager
 import androidx.compose.desktop.runtime.core.intent.Intent
 import androidx.compose.desktop.runtime.core.context.ContextImpl
-import androidx.compose.desktop.runtime.window.ApplicationRootContent
+import androidx.compose.desktop.runtime.window.ApplicationWindowContainer
 import androidx.compose.desktop.runtime.window.WindowManager
 import androidx.jvm.system.core.PathService
 import androidx.jvm.system.di.InstanceContext
@@ -12,6 +12,7 @@ import com.github.knightwood.slf4j.kotlin.logFor
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import org.koin.core.parameter.parametersOf
 import kotlin.system.exitProcess
 
 /**
@@ -32,19 +33,19 @@ object Singularity {
      * 一切的开端；一切的终结；
      *
      * @param awares 如果不想在application的onCreate函数中写太多逻辑，可以放到这里的初始化块
-     * @param applicationContent 自定义applicationScope内容显示
+     * @param applicationWindowContainer 自定义窗口容器实现
      * @param intentBuilder 启动主界面的参数
      */
     inline fun <reified T : Activity, reified R : Application> boot(
         awares: Array<Aware> = arrayOf(),
-        applicationContent: ApplicationRootContent? = null,
+        applicationWindowContainer: ApplicationWindowContainer? = null,
         noinline intentBuilder: (Intent.() -> Unit)? = null,
     ) {
         boot(
             mainActivity = T::class.java,
             applicationClass = R::class.java,
             awares = awares,
-            applicationContent = applicationContent,
+            applicationWindowContainer = applicationWindowContainer,
             intentBuilder = intentBuilder
         )
     }
@@ -55,14 +56,14 @@ object Singularity {
      * @param mainActivity 主界面
      * @param applicationClass 应用程序类，默认为Application
      * @param awares 如果不想再application的onCreate函数中写太多逻辑，可以放到这里的初始化块
-     * @param applicationContent 自定义applicationScope内容显示
+     * @param applicationWindowContainer 自定义窗口容器实现
      * @param intentBuilder 启动主界面的参数
      */
     fun boot(
         mainActivity: Class<out Activity>,
         applicationClass: Class<out Application> = Application::class.java,
         awares: Array<Aware> = arrayOf(),
-        applicationContent: ApplicationRootContent? = null,
+        applicationWindowContainer: ApplicationWindowContainer? = null,
         intentBuilder: (Intent.() -> Unit)? = null,
     ) {
         synchronized(lock) {
@@ -75,10 +76,7 @@ object Singularity {
             //启动所有的服务，比如窗口管理、activity管理
             InstanceContext.get().run {
                 get<ActivityManager>().prepare()
-                get<WindowManager>().also { windowManager ->
-                    //将传入compose函数作为ApplicationScope根视图
-                    windowManager.userInsteadApplicationRootContent = applicationContent
-                }
+                get<WindowManager>(parameters = { parametersOf(applicationWindowContainer) })
             }
             // 创建Application实例
             val instance: Application = applicationClass.getDeclaredConstructor().newInstance()
@@ -127,16 +125,37 @@ object Singularity {
 //<editor-fold desc="启动">
 /**
  * 一切的开端；一切的终结；
+ * 示例
+ * ```
+ * startApplication<SplashActivity, MainApplication>(
+ *      applicationWindowContainer = ApplicationWindowContainer { windows ->
+ *          application(exitProcessOnExit = false) {
+ *              UncaughtExceptionContent {
+ *                  windows()
+ *                  SystemTray()
+ *              }
+ *          }
+ *      },
+ *      intentBuilder = {
+ *          launchMode = LaunchMode.STANDARD
+ *          data {
+ *              putInt("targetId", 1)
+ *          }
+ *      }
+ * )
+ *
+ * ```
+ *
  *
  * @param awares 如果不想在application的onCreate函数中写太多逻辑，可以放到这里的初始化块
- * @param applicationContent 自定义applicationScope内容显示
+ * @param applicationWindowContainer 自定义applicationScope内容显示
  * @param intentBuilder 启动主界面的参数
  */
 inline fun <reified T : Activity, reified R : Application> startApplication(
     awares: Array<Aware> = arrayOf(),
-    applicationContent: ApplicationRootContent? = null,
+    applicationWindowContainer: ApplicationWindowContainer? = null,
     noinline intentBuilder: (Intent.() -> Unit)? = null,
-) = Singularity.boot<T, R>(awares = awares, applicationContent = applicationContent, intentBuilder = intentBuilder)
+) = Singularity.boot<T, R>(awares = awares, applicationWindowContainer = applicationWindowContainer, intentBuilder = intentBuilder)
 
 /**
  * 一切的开端；一切的终结；
@@ -144,20 +163,20 @@ inline fun <reified T : Activity, reified R : Application> startApplication(
  * @param mainActivity 主界面
  * @param applicationClass 应用程序类，默认为Application
  * @param awares 如果不想在application的onCreate函数中写太多逻辑，可以放到这里的初始化块
- * @param applicationContent 自定义applicationScope内容显示
+ * @param applicationWindowContainer 自定义applicationScope内容显示
  * @param intentBuilder 启动主界面的参数
  */
 fun startApplication(
     mainActivity: Class<out Activity>,
     applicationClass: Class<out Application> = Application::class.java,
     awares: Array<Aware> = arrayOf(),
-    applicationContent: ApplicationRootContent? = null,
+    applicationWindowContainer: ApplicationWindowContainer? = null,
     intentBuilder: (Intent.() -> Unit)? = null,
 ) = Singularity.boot(
     mainActivity = mainActivity,
     applicationClass = applicationClass,
     awares = awares,
-    applicationContent = applicationContent,
+    applicationWindowContainer = applicationWindowContainer,
     intentBuilder = intentBuilder,
 )
 

@@ -14,6 +14,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.window.ApplicationScope
+import androidx.compose.ui.window.application
 import androidx.jvm.system.core.*
 import androidx.jvm.system.ui.tray.FixedSystemTray
 import androidx.jvm.system.ui.tray.FixedTrayMenuBuilder.Companion.buildTrayMenu
@@ -34,9 +35,8 @@ class Main
 fun main() {
     setUncaughtExceptionHandler()
     startApplication<SplashActivity, MainApplication>(
-        applicationContent = object : ApplicationRootContent {
-            @Composable
-            override fun ApplicationScope.invoke(windows: ComposableContent) {
+        applicationWindowContainer = ApplicationWindowContainer { windows ->
+            application(exitProcessOnExit = false) {
                 UncaughtExceptionContent {
                     windows()
                     SystemTray()

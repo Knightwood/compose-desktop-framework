@@ -13,10 +13,6 @@
 ## 目录
 
 - [模块定位与依赖关系](#模块定位与依赖关系)
-- [环境要求](#环境要求)
-- [发布到本地 Maven 仓库](#发布到本地-maven-仓库)
-- [引入依赖](#引入依赖)
-- [最简示例](#最简示例)
 - [设计原理](#设计原理)
 - [核心概念与使用](#核心概念与使用)
   - [1. 服务容器：InstanceContext 与 ServiceBooter](#1-服务容器instancecontext-与-servicebooter)
@@ -26,7 +22,6 @@
   - [5. ViewModel：工厂、CreationExtras 与 Java 兼容](#5-viewmodel工厂creationextras-与-java-兼容)
   - [6. 通用工具类](#6-通用工具类)
 - [注意细节](#注意细节)
-- [API 参考](#api-参考)
 - [常见问题](#常见问题)
 
 ---
@@ -73,228 +68,6 @@
 
 ---
 
-## 环境要求
-
-| 项目 | 要求 |
-| --- | --- |
-| JDK | **17 及以上**（模块使用 `jvmToolchain(17)` 编译，class 文件版本 61） |
-| Kotlin | 2.2.10（编译该模块时使用的版本，消费方使用 2.0+ 一般也可） |
-| Gradle | 8.11.1（仓库自带 wrapper） |
-| 操作系统 | Windows / Linux / macOS 桌面环境（无 Android 运行时） |
-| JVM 参数 | 建议至少 `-Xmx2g`；含中文路径/资源时加 `-Dfile.encoding=UTF-8` |
-
-### 运行期依赖（会被传递）
-
-| 依赖 | 版本 | 用途 |
-| --- | --- | --- |
-| `org.jetbrains.kotlinx:kotlinx-coroutines-core` | 1.10.1 | 协程、Flow |
-| `androidx.lifecycle:lifecycle-runtime` | 2.11.0-alpha02 | `Lifecycle`、`LifecycleOwner`、`LifecycleRegistry` |
-| `androidx.lifecycle:lifecycle-viewmodel` | 2.11.0-alpha02 | `ViewModel`、`ViewModelProvider`、`CreationExtras` |
-| `androidx.lifecycle:lifecycle-viewmodel-savedstate` | 2.11.0-alpha02 | `SavedStateHandle`、`createSavedStateHandle()` |
-| `androidx.savedstate:savedstate` | 1.3.4-rc01 | `SavedState`、`SavedStateRegistry` |
-| `androidx.core:core-bundle` | 1.1.0-alpha03 | 跨平台 `Bundle`、`bundleOf` |
-| `io.insert-koin:koin-core` | 4.0.2（BOM） | 服务容器 |
-| `com.squareup.okio:okio` | 3.10.2 | `Path`（`toolkit` 路径 API 使用） |
-| `org.slf4j:slf4j-api` | 2.0.15 | 日志门面 |
-| `com.github.knightwood:slf4j-api-kotlin` | 0.0.7 | Kotlin 风格日志扩展（`logFor`、`info { }`） |
-| `ch.qos.logback:logback-classic` | 1.5.12 | 默认日志实现（可选择替换） |
-| `com.google.auto.service:auto-service-annotations` | 由仓库版本目录管理 | `@AutoService` SPI 注册 |
-
-> `slf4j-api` 与 `logback-classic` 已带在依赖里；如果宿主应用自己管理日志实现，请在依赖中排除 `logback-classic`，避免多实现冲突。
-
----
-
-## 发布到本地 Maven 仓库
-
-本仓库使用 `com.vanniktech.maven.publish` 插件统一发布，配置在 [`build-logic/src/main/kotlin/publish.gradle.kts`](../../build-logic/src/main/kotlin/publish.gradle.kts)。
-
-### 方式一：发到 `~/.m2/repository`（推荐，最省事）
-
-```bash
-# 只发布 common
-./gradlew :framework:common:publishToMavenLocal
-
-# 发布整个框架（common + compose + swing + toolkit + tray）
-./gradlew publishToMavenLocal
-```
-
-产物会写入 `%USERPROFILE%\.m2\repository`（Windows）或 `~/.m2/repository`（Linux/macOS），路径形如：
-
-```
-~/.m2/repository/com/github/knightwood/desktop/framework-common/1.3.0/
-```
-
-### 方式二：发布到自定义目录
-
-根目录 `gradle.properties` 中：
-
-```properties
-my.maven.name=MyLocalMaven
-# Windows 示例：F:/.m2/repository 或 D:\\maven
-my.maven.url=/mnt/f/.m2/repository
-group=com.github.knightwood.desktop
-version=1.3.0
-```
-
-> `my.maven.url` 当前值是 Linux 风格路径。**Windows 下请改成** `F:/.m2/repository` 这类形式；Gradle 的 `uri()` 对 `F:/...` 与 `file:///F:/...` 都能识别，但反斜杠 `D:\\maven` 更容易出问题。
-
-然后执行：
-
-```bash
-./gradlew :framework:common:publish
-```
-
-### 方式三：发布到 Maven Central
-
-`publish.gradle.kts` 中已经调用了 `publishToMavenCentral()`，但 `signAllPublications()` 被注释掉了。要真正发布到中央仓库，需要：
-
-1. 打开 `signAllPublications()` 并配置 GPG；
-2. 在 `~/.gradle/gradle.properties` 中提供 `mavenCentralUsername` / `mavenCentralPassword`；
-3. 执行 `./gradlew :framework:common:publishAllPublicationsToMavenCentralRepository`。
-
-### 关于 artifactId
-
-`publish.gradle.kts` 中的规则是：
-
-```kotlin
-val parentName = project.parent?.name
-val artifactPrefix = if (parentName == null || parentName == rootProject.name) "" else "$parentName-"
-artifactId = "$artifactPrefix${project.name}"
-```
-
-因为 `rootProject.name = "desktop-activity"`，父项目名 `framework` 既不等于根名也不为空，于是得到：
-
-| Gradle 项目 | artifactId |
-| --- | --- |
-| `:framework:common` | `framework-common` |
-| `:framework:compose` | `framework-compose` |
-| `:framework:swing` | `framework-swing` |
-| `:toolkit:spi` | `toolkit-spi` |
-| `:toolkit:win` | `toolkit-win` |
-| `:toolkit:linux` | `toolkit-linux` |
-| `:toolkit:mac` | `toolkit-mac` |
-| `:compose-tray` | `compose-tray` |
-
-另外，`framework-common` / `framework-compose` 是 **Kotlin Multiplatform（仅 `jvm()` target）** 模块，会发布两份：
-
-- `framework-common`：根模块，带 Gradle Module Metadata（`.module`），Gradle 消费方用它即可自动解析到 jvm 变体；
-- `framework-common-jvm`：真正的 JVM jar，Maven 消费方必须用这个带 `-jvm` 后缀的坐标。
-
----
-
-## 引入依赖
-
-### Gradle（Kotlin DSL）
-
-```kotlin
-repositories {
-    mavenLocal()          // 使用 publishToMavenLocal 时必须
-    mavenCentral()
-    google {
-        mavenContent {
-            includeGroupAndSubgroups("androidx")
-            includeGroupAndSubgroups("com.google")
-        }
-    }
-}
-
-dependencies {
-    implementation("com.github.knightwood.desktop:framework-common:1.3.0")
-}
-```
-
-### Gradle（Groovy）
-
-```groovy
-dependencies {
-    implementation 'com.github.knightwood.desktop:framework-common:1.3.0'
-}
-```
-
-### Maven
-
-```xml
-<dependency>
-  <groupId>com.github.knightwood.desktop</groupId>
-  <artifactId>framework-common-jvm</artifactId>
-  <version>1.3.0</version>
-</dependency>
-```
-
-### 版本对齐建议
-
-如果同时用到 Compose 侧或 Swing 侧，请保持版本一致：
-
-```kotlin
-val desktopFramework = "1.3.0"
-
-dependencies {
-    implementation("com.github.knightwood.desktop:framework-common:$desktopFramework")
-    implementation("com.github.knightwood.desktop:framework-compose:$desktopFramework")
-    // 或者
-    implementation("com.github.knightwood.desktop:framework-swing:$desktopFramework")
-
-    // 平台实现二选一（也可全带，运行时按 OS 选择）
-    implementation("com.github.knightwood.desktop:toolkit-win:$desktopFramework")
-}
-```
-
----
-
-## 最简示例
-
-下面这段代码不启动任何 UI，只演示「启动容器 → 注册意图处理器 → 投递意图 → 存取保存状态」这条主干。
-
-```kotlin
-import androidx.compose.desktop.runtime.core.ServiceBooter
-import androidx.compose.desktop.runtime.core.intent.IOperateIntentProcessor
-import androidx.compose.desktop.runtime.core.intent.IntentProcessor
-import androidx.compose.desktop.runtime.core.intent.OperateIntent
-import androidx.compose.desktop.runtime.core.intent.registerProcessor
-import androidx.compose.desktop.runtime.savestate.ApplicationSaveStateSaver
-import androidx.compose.desktop.runtime.savestate.Token
-import org.slf4j.LoggerFactory
-
-/** 1. 自定义一种意图 */
-class SayHelloIntent(val who: String) : OperateIntent
-
-fun main() {
-    val logger = LoggerFactory.getLogger("demo")
-
-    // 2. 启动框架的 Koin 容器（会通过 ServiceLoader 装载各模块提供的 Module）
-    ServiceBooter.bootstrap(logger)
-
-    // 3. 取出公共层内置的服务
-    val intentProcessor = ServiceBooter.getService(IntentProcessor::class)
-    val stateSaver = ServiceBooter.getService(ApplicationSaveStateSaver::class)
-
-    // 4. 为自定义意图注册处理器
-    intentProcessor.registerProcessor(object : IOperateIntentProcessor<SayHelloIntent> {
-        override fun process(intent: SayHelloIntent): Boolean {
-            println("Hello, ${intent.who}")
-            return true
-        }
-    })
-
-    // 5. 投递意图（也可以直接调用处理器）
-    val handled = intentProcessor.process(SayHelloIntent("desktop"))
-
-    // 6. 用 Token 存取一份 SavedState
-    val token = Token("demo-page")
-    stateSaver.obtain(token).putString("name", "knightwood")
-
-    // 7. 导出全部状态，方便写盘
-    println("handled=$handled, exported=${stateSaver.export()}")
-}
-```
-
-要点：
-
-- `ServiceBooter.bootstrap(logger)` 只应调用一次；重复启动会捕获 `KoinApplicationAlreadyStartedException` 并打一条 warn，不会崩溃。
-- `getService(Class<T>)` 与 `getService(KClass<T>)` 两个重载都有，Java 侧用 `service.getService(ApplicationSaveStateSaver.class)`。
-- 如果没有引入任何平台模块（`toolkit-win/linux/mac`），容器仍能启动，只是取不到 `AppBasePathProvider` 等平台实现。
-
----
 
 ## 设计原理
 
@@ -375,6 +148,62 @@ Android 的 `Intent` 是「数据 + 系统解析」的混合体；桌面端没�
 `IntentProcessor` 内部维护 `Map<Class<out OperateIntent>, (OperateIntent) -> Boolean>`，`process(intent)` 时按 `intent::class.java` **精确匹配**（不做父类回退），命中则返回处理器结果，未命中返回 `false`。
 
 这样 Compose 侧的 `LaunchActivityIntent` 与 Swing 侧的 `LaunchJFrameIntent` 可以互不感知，各自把自己的 Launcher 注册进来即可。上层 `Context.startActivity()` / `JFrameManager.openJFrame()` 最终都会汇入这条链路。
+
+#### 最简示例
+
+下面这段代码不启动任何 UI，只演示「启动容器 → 注册意图处理器 → 投递意图 → 存取保存状态」这条主干。
+
+```kotlin
+import androidx.compose.desktop.runtime.core.ServiceBooter
+import androidx.compose.desktop.runtime.core.intent.IOperateIntentProcessor
+import androidx.compose.desktop.runtime.core.intent.IntentProcessor
+import androidx.compose.desktop.runtime.core.intent.OperateIntent
+import androidx.compose.desktop.runtime.core.intent.registerProcessor
+import androidx.compose.desktop.runtime.savestate.ApplicationSaveStateSaver
+import androidx.compose.desktop.runtime.savestate.Token
+import org.slf4j.LoggerFactory
+
+/** 1. 自定义一种意图 */
+class SayHelloIntent(val who: String) : OperateIntent
+
+fun main() {
+    val logger = LoggerFactory.getLogger("demo")
+
+    // 2. 启动框架的 Koin 容器（会通过 ServiceLoader 装载各模块提供的 Module）
+    ServiceBooter.bootstrap(logger)
+
+    // 3. 取出公共层内置的服务
+    val intentProcessor = ServiceBooter.getService(IntentProcessor::class)
+    val stateSaver = ServiceBooter.getService(ApplicationSaveStateSaver::class)
+
+    // 4. 为自定义意图注册处理器
+    intentProcessor.registerProcessor(object : IOperateIntentProcessor<SayHelloIntent> {
+        override fun process(intent: SayHelloIntent): Boolean {
+            println("Hello, ${intent.who}")
+            return true
+        }
+    })
+
+    // 5. 投递意图（也可以直接调用处理器）
+    val handled = intentProcessor.process(SayHelloIntent("desktop"))
+
+    // 6. 用 Token 存取一份 SavedState
+    val token = Token("demo-page")
+    stateSaver.obtain(token).putString("name", "knightwood")
+
+    // 7. 导出全部状态，方便写盘
+    println("handled=$handled, exported=${stateSaver.export()}")
+}
+```
+
+要点：
+
+- `ServiceBooter.bootstrap(logger)` 只应调用一次；重复启动会捕获 `KoinApplicationAlreadyStartedException` 并打一条 warn，不会崩溃。
+- `getService(Class<T>)` 与 `getService(KClass<T>)` 两个重载都有，Java 侧用 `service.getService(ApplicationSaveStateSaver.class)`。
+- 如果没有引入任何平台模块（`toolkit-win/linux/mac`），容器仍能启动，只是取不到 `AppBasePathProvider` 等平台实现。
+
+---
+
 
 ---
 
@@ -780,132 +609,6 @@ val systemVer: String   // Windows: "10"/"11" 之类；macOS: java.version；Lin
 
 ---
 
-## API 参考
-
-### core
-
-```kotlin
-object ServiceBooter {
-    fun bootstrap(logger: Logger)
-    fun getKoin(): Koin
-    fun <T : Any> getService(cls: KClass<T>): T
-    fun <T : Any> getService(cls: Class<T>): T
-}
-inline fun <reified T : Any> getServiceInstance(): T
-```
-
-### core.intent
-
-```kotlin
-interface OperateIntent
-
-enum class LaunchMode { SINGLE_INSTANCE, STANDARD }
-    operator fun plus(data: Any?): Pair<LaunchMode, Any?>
-
-data class ComponentResult(val resultCode: Int, val data: Bundle?)
-fun interface ComponentResultCallback { fun invoke(resultCode: Int, data: Bundle?) }
-
-fun interface IOperateIntentProcessor<T : OperateIntent> { fun process(intent: T): Boolean }
-
-class IntentProcessor : InstanceKoinComponent, IOperateIntentProcessor<OperateIntent> {
-    fun <T : OperateIntent> registerProcessor(intentCls: Class<T>, processor: IOperateIntentProcessor<T>)
-    override fun process(intent: OperateIntent): Boolean
-}
-inline fun <reified T : OperateIntent> IntentProcessor.registerProcessor(processor: IOperateIntentProcessor<T>)
-```
-
-### savestate
-
-```kotlin
-class ApplicationSaveStateSaver {
-    fun obtain(token: Token): SavedState
-    fun obtain(token: IToken): SavedState
-    fun remove(token: Token)
-    fun remove(token: IToken)
-    fun release()
-    fun export(): Map<Token, SavedState>
-    fun import(data: Map<Token, SavedState>): ApplicationSaveStateSaver
-}
-
-interface IToken { val value: String }
-@JvmInline value class Token(override val value: String) : IToken
-object Tokens { @JvmStatic fun of(value: String): IToken }
-```
-
-### utils.eventbus
-
-```kotlin
-class EventBus : IEventBus {
-    var map: MutableMap<String, IMailBox>
-    var factory: MailBoxFactory
-    operator fun get(key: String): IMailBox                       // JVM 名: getIMailBox
-    fun <T : IMailBox> get(key: String): T                        // JVM 名: getMailBox
-    fun setMailBoxFactory(factory: MailBoxFactory)
-
-    companion object {
-        fun obtain(lifecycleOwner: LifecycleOwner, sticky: Boolean, name: Any = lifecycleOwner): EventBus
-        fun obtain(sticky: Boolean, name: Any = BusHolder): EventBus
-        val instance: EventBus
-        fun destroy(name: Any)
-        fun destroyAll()
-        operator fun invoke(lifecycleOwner: LifecycleOwner, sticky: Boolean, name: Any = lifecycleOwner): EventBus
-        operator fun get(name: Any): EventBus?                    // JVM 名: getFlowBusInstance
-    }
-    fun interface MailBoxFactory { fun create(sticky: Boolean, scope: CoroutineScope): IMailBox }
-}
-
-open class IEventBus(val name: Any) : LifecycleEventObserver {
-    var scope: CoroutineScope
-    fun setLifecycleOwner(owner: LifecycleOwner)
-    open fun destroy()
-}
-
-interface IMailBox {
-    fun submit(value: Any, delay: Duration = ZERO)
-    fun observe(collector: FlowCollector<Any>)
-    suspend fun post(value: Any, delay: Duration = ZERO)
-    suspend fun collect(collector: FlowCollector<Any>)
-}
-
-class FlowMailBox(val scope: CoroutineScope, ini: Ini) : IMailBox {
-    var flow: MutableSharedFlow<Any>
-    data class Ini(replay: Int = 0, extraBufferCapacity: Int = 0, onBufferOverflow: BufferOverflow = SUSPEND) : Serializable {
-        constructor(sticky: Boolean)
-    }
-}
-
-inline fun <reified T> IMailBox.observe(collector: FlowCollector<T>)
-suspend inline fun <reified T> IMailBox.collect(collector: FlowCollector<T>)
-data object NothingEvent : Any()
-```
-
-### viewmodel
-
-```kotlin
-object JvmViewModelProviders { fun <T : ViewModel> createViewModel(modelClass: Class<T>): T }
-object ViewModelProviders {
-    fun getDefaultFactory(owner: ViewModelStoreOwner): ViewModelProvider.Factory
-    fun getDefaultCreationExtras(owner: ViewModelStoreOwner): CreationExtras
-}
-object DefaultViewModelProviderFactory : ViewModelProvider.Factory
-object MySavedStateViewModelFactory : ViewModelProvider.Factory
-fun ViewModelProvider.Companion.create(owner, factory, creationExtras): ViewModelProvider
-fun ViewModelStoreOwner.mutableCreationExtrasOf(builder: MutableCreationExtras.() -> Unit): CreationExtras
-fun CreationExtras.toMutable(extrasBuilder: MutableCreationExtras.() -> Unit): MutableCreationExtras
-```
-
-### utils
-
-```kotlin
-class WeakReferenceDelegate<T> : ReadWriteProperty<Any?, T?>          // isInitialized
-class WeakReferenceReadableDelegate<T>(ref: T?) : ReadWriteProperty<Any?, T?>
-object SwingExtension { fun writeClipboard(text: String); fun readClipboard(): String }
-object SwingErrorDialog { fun showErrorDialog(e: Throwable) }
-val systemVer: String
-```
-
----
-
 ## 常见问题
 
 ### Q1. 启动时报 `KoinApplicationAlreadyStartedException`？
@@ -938,28 +641,3 @@ val systemVer: String
 - `SavedStateHandle` 的数据来自宿主的 `SavedStateRegistry`，需要宿主实现 `SavedStateRegistryOwner` 并在 `onCreate` 里 `performRestore(savedState)`；
 - 宿主必须启用 token（否则 `savedState == null`，`performRestore(null)` 不会恢复任何东西）；
 - 关闭窗口必须走 `finish()`（触发 `onDestroy` → `onSaveInstanceState`），直接 `dispose()` 或 `HIDE_ON_CLOSE` 不会保存。
-
-### Q6. 想在自己的库中也用 `@AutoService`？
-
-在 `build.gradle.kts` 中：
-
-```kotlin
-plugins { alias(libs.plugins.ksp) }
-
-dependencies {
-    implementation(libs.autoService.annoations)
-    ksp(libs.autoService.ksp)
-}
-```
-
-如果模块是多平台（`kotlin { jvm() }`），要写成：
-
-```kotlin
-dependencies { add("kspJvm", libs.autoService.ksp) }
-```
-
-（本仓库的 `framework:common` / `framework:compose` 就是这样写的。）
-
-### Q7. 能否只用 `framework-common` 而不引入 Compose？
-
-可以。`framework-common` 不依赖 Compose 运行时，适合做「非 UI 的桌面工具库/服务端工具」的基础设施。但如前所述，`SwingErrorDialog` 与剪贴板相关工具需要 AWT。

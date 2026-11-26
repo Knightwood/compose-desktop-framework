@@ -305,22 +305,24 @@ class MainApplication : Application() {
 
 #### 启动Application
 
-startApplication方法允许传入applicationContent接口实现和一个intentBuilder匿名函数。
+startApplication方法允许传入applicationWindowContainer接口实现和一个intentBuilder匿名函数。
 
 * intentBuilder： 用于修改第一个显示的Activity的Intent，比如修改启动模式、传递数据等。
-* applicationContent：提供自定义application{}根视图显示，自定义框架内窗口显示时机、添加托盘图标、为内层compose视图提供CompositionLocal值
+* applicationWindowContainer：提供自定义application{}根视图显示，自定义框架内窗口显示时机、添加托盘图标、为内层compose视图提供CompositionLocal值
 
 示例：
 ```kotlin
 fun main() {
     setUncaughtExceptionHandler()
     startApplication<SplashActivity, MainApplication>(
-        applicationContent = object : ApplicationRootContent {
-            @Composable
-            override fun ApplicationScope.invoke(windows: ComposableContent) {
-                UncaughtExceptionContent { //捕获Compose界面未捕获的错误，并显示为弹窗提示
-                    windows() // 框架内所有要显示的Window，必须调用，否则不显示任何框架内窗口
-                    SystemTray() //增加托盘显示
+        // 提供自定义的应用窗口容器，手动调用application方法自定义application{}中的内容显示，
+        // 自行决定所有窗口的显示时机，提供托盘图标、脱离框架的Window、提供CompositionLocal值等。
+        applicationWindowContainer = ApplicationWindowContainer { windows ->
+            // 自定义application{}内容
+            application(exitProcessOnExit = false) {
+                UncaughtExceptionContent {
+                    windows()
+                    SystemTray()
                 }
             }
         },
@@ -336,39 +338,6 @@ fun main() {
 
 注：
 * 如果没有实现自定义的Application子类，可以在调用startApplication方法时将第二个泛型参数指定为Application类。
-
-#### ApplicationRootContent 接口
-
-在“窗口管理实现”一节讲了框架实现窗口管理的原理：
-WindowManager内部调用了application函数，在应用根视图中遍历并显示所有要显示的窗口(Activity根视图)，由于Activity根视图函数内部调用了Window函数，就相当于Window函数在application{}中调用，也就能显示为窗口。
-这有个致命问题：用户无法自定义application的content参数实现，也就无法在application{}中添加任何内容，
-包括不限于托盘图标、原始的Window函数调用、使用Compose函数包裹Activity根视图调用以提供CompositionLocal值。
-
-为解决此问题，增加了ApplicationRootContent接口：
-* 传递此接口，WindowManager会调用接口函数，就将框架内所有窗口显示功能（AllWindows函数）作为参数传递，
-  允许用户自定义application{}中的内容显示，自行决定AllWindows显示时机，提供托盘图标、脱离框架的Window、提供CompositionLocal值等。
-* 不传递此接口，WindowManager将直接在application{}中调用AllWindows函数，显示所有框架内的窗口。
-
-```kotlin
-var userInsteadApplicationRootContent: ApplicationRootContent? = null
-
-/**
- * 此函数用于遍历并显示所有要显示的Activity根视图
- */
-@Compose
-fun AllWindows(){
-    windows.forEach { it() }
-}
-
-application {
-    //如果用户传递了接口，将AllWindows函数包装为普通compsoe函数传递到接口，让用户决定框架内窗口显示时机，
-    //提供其他要在application{}中显示的组件
-    userInsteadApplicationRootContent?.Invoke(scope = this, content = { AllWindows() }) 
-        ?: this.AllWindows() //否则，直接调用AllWindows函数显示所有框架内窗口
-}
-
-
-```
 
 #### 获取框架中的各种服务实例
 

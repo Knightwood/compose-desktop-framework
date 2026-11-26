@@ -9,6 +9,8 @@ import org.koin.core.logger.Level.INFO
 import org.koin.core.logger.Level.NONE
 import org.koin.core.logger.Level.WARNING
 import org.koin.core.logger.MESSAGE
+import org.koin.core.parameter.ParametersHolder
+import org.koin.core.qualifier.Qualifier
 import org.slf4j.Logger
 import kotlin.reflect.KClass
 
@@ -46,6 +48,10 @@ object ServiceBooter {
     /**
      * 获取一个已注册到koin的框架服务实例
      *
+     * @param cls 服务类
+     * @param qualifier  如果要获取的服务使用接口形式定义, 在不同操作系统上有不同的实现，则需要使用[androidx.jvm.system.di.currentPlatformKoinNamed]作为qualifier参数
+     * @param parameters 服务所需参数, 大多数情况下服务会在初始化阶段生成实例,参数也由那时被传递,因此当你在使用时一般不需要传递参数
+     *
      * 例如：
      * ```
      * // application结束时将状态保存到磁盘
@@ -57,12 +63,20 @@ object ServiceBooter {
      *     }
      * ```
      */
-    fun <T : Any> getService(cls: KClass<T>): T {
-        return getKoin().get(cls)
+    fun <T : Any> getService(
+        cls: KClass<T>,
+        qualifier: Qualifier? = null,
+        parameters: (() -> ParametersHolder)? = null,
+    ): T {
+        return getKoin().get(cls, qualifier, parameters)
     }
 
-    fun <T : Any> getService(cls: Class<T>): T {
-        return getKoin().get(cls.kotlin)
+    fun <T : Any> getService(
+        cls: Class<T>,
+        qualifier: Qualifier? = null,
+        parameters: (() -> ParametersHolder)? = null,
+    ): T {
+        return getKoin().get(cls.kotlin, qualifier, parameters)
     }
 }
 
@@ -82,7 +96,13 @@ object ServiceBooter {
  * getServiceInstance<JFrameManager>()
  * getServiceInstance<JFrameLauncher>()
  * ```
+ * @param qualifier  如果要获取的服务使用接口形式定义, 在不同操作系统上有不同的实现，则需要使用[androidx.jvm.system.di.currentPlatformKoinNamed]作为qualifier参数
+ * @param parameters 服务所需参数, 大多数情况下服务会在初始化阶段生成实例,参数也由那时被传递,因此当你在使用时一般不需要传递参数
+ *
  */
-inline fun <reified T : Any> getServiceInstance(): T {
-    return ServiceBooter.getService(T::class)
+inline fun <reified T : Any> getServiceInstance(
+    qualifier: Qualifier? = null,
+    noinline parameters: (() -> ParametersHolder)? = null,
+): T {
+    return ServiceBooter.getService(T::class, qualifier, parameters)
 }
