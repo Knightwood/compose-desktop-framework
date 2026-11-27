@@ -1,6 +1,7 @@
 package com.github.knightwood.example
 
 import androidx.compose.desktop.runtime.activity.Activity
+import androidx.compose.desktop.runtime.core.intent.LaunchMode
 import androidx.compose.desktop.runtime.core.startApplication
 import androidx.compose.desktop.runtime.utils.UncaughtExceptionContent
 import androidx.compose.desktop.runtime.utils.setUncaughtExceptionHandler
@@ -21,6 +22,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.window.ApplicationScope
+import androidx.compose.ui.window.application
 import androidx.jvm.system.core.*
 import androidx.jvm.system.ui.tray.FixedSystemTray
 import com.github.knightwood.example.acts.SplashActivity
@@ -38,13 +40,18 @@ class Main
 fun main() {
     setUncaughtExceptionHandler()
     startApplication<SplashActivity, MainApplication>(
-        applicationContent = object : ApplicationContentWrapper {
-            @Composable
-            override fun ApplicationScope.invoke(content: ComposableContent) {
+        applicationWindowContainer = ApplicationWindowContainer { windows ->
+            application(exitProcessOnExit = false) {
                 UncaughtExceptionContent {
-                    content()
+                    windows()
                     SystemTray()
                 }
+            }
+        },
+        intentBuilder = {
+            launchMode = LaunchMode.STANDARD
+            data {
+                putInt("targetId", 1)
             }
         }
     )
@@ -60,7 +67,7 @@ fun ApplicationScope.SystemTray() {
         primaryAction = {
             mainActivity?.run {
                 show()
-                windowHolder.composeWindow.setWindowSizeState(WindowSizeState.Restore)
+                composeWindow?.setWindowSizeState(WindowSizeState.Restore)
             }
         },
         menu = {

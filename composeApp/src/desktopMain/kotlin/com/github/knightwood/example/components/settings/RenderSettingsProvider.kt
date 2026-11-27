@@ -32,7 +32,7 @@ object RenderSettingsProvider : KoinComponent {
 
 @Serializable
 data class RenderSettings(
-    val skikoRenderApi: SkikoRenderApi = SkikoRenderApi.DIRECT3D,
+    val skikoRenderApi: SkikoRenderApi = SkikoRenderApi.SOFTWARE,
     val singleInstance: Boolean = true,
     val closeAppDirectly: Boolean = true,
 )

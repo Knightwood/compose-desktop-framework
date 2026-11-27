@@ -41,7 +41,20 @@ fun GraphicsApi.isHighLevel(): Boolean {
     return false
 }
 
-
+/**
+ * ```
+ *  val renderApi = xs.skikoRenderApi
+ *  if (renderApi != null) {
+ *      SkikoPropertiesHelper.changeRenderApi(renderApi)
+ *      if (renderApi == SkikoRenderApi.SOFTWARE) {
+ *          TrayConf.transparent = true
+ *      } else {
+ *          //如果使用DIRECT3D、VULKAN，最好把托盘窗口透明功能关闭，否则窗口可能显示异常
+ *          TrayConf.transparent = false
+ *      }
+ *  }
+ * ```
+ */
 @Composable
 fun RenderApiSelector(
     status: ExpandState = rememberExpandState(),
