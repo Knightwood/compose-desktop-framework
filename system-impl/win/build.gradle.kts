@@ -1,3 +1,5 @@
+import com.vanniktech.maven.publish.KotlinJvm
+
 plugins {
     kotlin("jvm")
     alias(libs.plugins.composeMultiplatform)
@@ -87,7 +89,7 @@ mavenPublishing {
     publishToMavenCentral()
 //    signAllPublications()
     coordinates(group.toString(), artifactId, version.toString())
-
+    configure(KotlinJvm(sourcesJar = false))
     pom {
         name = artifactId
         description = "android like desktop runtime"
